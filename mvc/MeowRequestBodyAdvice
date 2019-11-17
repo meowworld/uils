@@ -1,0 +1,33 @@
+/**
+ * RequestBodyAdvice 只支持带有 @RequestBody 注解的 controller 方法参数的方法，同时上报的数据必须是 json or xml
+ * @GetMapping("/test")
+ * public String test(@RequestBody String name, HttpServletRequest request)
+ */
+
+@RestControllerAdvice
+public class MeowRequestBodyAdvice implements RequestBodyAdvice {
+    @Override
+    public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+        System.out.println("");
+        return true;
+    }
+
+    @Override
+    public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) throws IOException {
+
+        System.out.println();
+        return null;
+    }
+
+    @Override
+    public Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+        System.out.println();
+        return 0;
+    }
+
+    @Override
+    public Object handleEmptyBody(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+        System.out.println();
+        return 0;
+    }
+}
