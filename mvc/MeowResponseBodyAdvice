@@ -1,0 +1,20 @@
+/**
+ * 这个 ResponseBodyAdvice 只支持 @ResponseBody 注解的 controller 方法，
+ */
+
+@RestControllerAdvice
+public class MeowResponseBodyAdvice implements ResponseBodyAdvice {
+
+    @Override
+    public boolean supports(MethodParameter returnType, Class converterType) {
+        System.out.println();
+        return false;
+    }
+
+    @Override
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+
+        System.out.println();
+        return null;
+    }
+}
