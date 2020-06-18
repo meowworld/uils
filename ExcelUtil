@@ -1,0 +1,108 @@
+publib class ExcelUtil <T> {
+
+	public static <T> void exportExcel(String fileName, String[] headers, Collection<T> dataset, HttpServletResponse response) {
+		try (ServletOutputStream out = response.getOutputStream()) {
+			HSSFWorkbook sheets = exportExcel2003(headers, dataset);
+			response.setContentType("application/vnd.ms-excel");
+			response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8") + ".xls");
+			sheets.write(out);
+		} catch (Exception e) {
+			logger.error("excel导出失败", e);
+			throw new HicmException("excel导出失败");
+		}
+	}
+
+
+	public static <T> HSSFWorkbook exportExcel2003(String[] headers, Collection<T> dataset) throws Exception {
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		HSSFFont redFont = workbook.createFont();
+		redFont.setFontName("微软雅黑");
+		cellStyle.setFont(redFont);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
+		HSSFSheet sheet = workbook.createSheet();
+		HSSFRow headerRow = sheet.createRow(0);
+		HSSFCell cellHeader;
+		for (int i = 0; i < headers.length; i++) {
+			cellHeader = headerRow.createCell(i);
+			cellHeader.setCellStyle(cellStyle);
+			cellHeader.setCellValue(headers[i]);
+		}
+
+		Iterator<T> it = dataset.iterator();
+		int index = 0;
+		while (it.hasNext()) {
+			index++;
+			HSSFRow row = sheet.createRow(index);
+			T t = (T) it.next();
+			Field[] fields = t.getClass().getDeclaredFields();
+			boolean number = false;
+			boolean first = false;
+			if (Arrays.asList(headers).contains("序号")) {
+				HSSFCell cell = row.createCell(0);
+				cell.setCellStyle(cellStyle);
+				cell.setCellValue("" + index);
+				number = true;
+			}
+			int i = 0;
+			for (Field field : fields) {
+				field.setAccessible(true);
+				boolean nullableAnno = field.isAnnotationPresent(Nullable.class);
+				if (nullableAnno) {
+					continue;
+				}
+				if (number && !first) {
+					i++;
+					first = true;
+				}
+				fillValue(row, t, field, i, cellStyle);
+				i++;
+			}
+		}
+
+		DateThreadUtil.remove();
+
+		for (int i = 0; i < headers.length; i++) {
+			sheet.autoSizeColumn((short) i);
+			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 17 / 10);
+		}
+		return workbook;
+	}
+
+
+	private static <T> void fillValue(HSSFRow row, T t, Field field, int i, HSSFCellStyle cellStyle) throws Exception {
+		HSSFCell cell = row.createCell(i);
+		cell.setCellStyle(cellStyle);
+		Object value = field.get(t);
+		String textValue;
+		if (value == null) {
+			return;
+		}
+		if (value instanceof String) {
+			textValue = (String) value;
+		} else if (value instanceof Number) {
+			textValue = String.valueOf(value);
+		} else if (value instanceof Date) {
+			boolean formatAnno = field.isAnnotationPresent(JSONField.class);
+			String pattern = null;
+			if (formatAnno) {
+				JSONField annotation = field.getAnnotation(JSONField.class);
+				pattern = annotation.format();
+				textValue = DateThreadUtil.format((Date) value, pattern);
+			} else {
+				textValue = DateThreadUtil.format((Date) value);
+			}
+		} else if (value instanceof Boolean) {
+			textValue = "是";
+			if (!(Boolean) value) {
+				textValue = "否";
+			}
+		} else {
+			textValue = value.toString();
+		}
+		cell.setCellValue(textValue);
+	}
+}
